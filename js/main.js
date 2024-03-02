@@ -16,43 +16,19 @@ function getColors() {
     }
 }
 
-function startDemonstration() {
-    console.log('Starting new Demo')
-    addRandomColor();
-    console.log(colorsPattern);
-    playCorlorPattern(colorsPattern);
-}
-
-function checkUserInput() {
-    for (let i = 0; i < tiles.length; i++) {
-        tiles[i].addEventListener('click', function () {
-            selectedColor = tiles[i].getAttribute('data-tile');
-            playColorAudio(selectedColor);
-            
-            if (selectedColor != colorsPattern[clickCount]) {
-                wrongPlay();
-                return;
-            }
-
-            clickCount++;
-            console.log(clickCount)
-        })
-    }
-}
-
 function playColorAudio(color) {
     const audio = new Audio(`sounds/${color}.mp3`);
     audio.play();
 }
 
-function wrongPlay() {
+function playWrongAudio() {
     const wrongAudio = new Audio('/sounds/wrong.mp3');
     const gameOverAudio = new Audio('/sounds/game-over.wav');
 
     setTimeout(() => {
         wrongAudio.play();
     }, 1000);
-    
+
     setTimeout(() => {
         gameOverAudio.play();
     }, 3000);
@@ -62,6 +38,11 @@ function wrongPlay() {
     }, 4000);
 }
 
+function playWinAudio() {
+    const gameWonAudio = new Audio('/sounds/game-win.wav');
+    gameWonAudio.play();
+}
+
 function adjustHighScore(score) {
     if (score > highScore) {
         highScoreDisplay.innerHTML = score;
@@ -69,34 +50,76 @@ function adjustHighScore(score) {
     }
 }
 
-function loadHighScore() {
-    const savedHighScore = JSON.parse(localStorage.getItem('highScore'));
-    if (savedHighScore) {
-        adjustHighScore(savedHighScore);
-    }        
-}
-
-function adjustLevel(score) {
+function adjustLevelScore(score) {
     if (score > level) {
         levelDislay.innerHTML = score;
     }
 }
 
+function loadHighScore() {
+    const savedHighScore = JSON.parse(localStorage.getItem('highScore'));
+    if (savedHighScore) {
+        adjustHighScore(savedHighScore);
+    }
+}
+
+function newLevel() {
+    clickCount = 0;
+    addRandomColor();
+    playColorPattern(colorsPattern);
+    console.log(colorsPattern);
+}
+
+function getUserInput() {
+    board.addEventListener('click', function (event) {
+
+        const clickedTile = event.target.closest('[data-tile]');
+
+        if (clickedTile) {
+            const selectedColor = clickedTile.getAttribute('data-tile');
+            playColorAudio(selectedColor);
+
+            if (selectedColor != colorsPattern[clickCount]) {
+                board.classList.add('unclickable');
+                playWrongAudio();
+                return;
+            }
+        }
+
+        clickCount++;
+
+        if (clickCount === colorsPattern.length) {
+            setTimeout(() => {
+                adjustHighScore(clickCount);
+                adjustLevelScore(clickCount);
+                newLevel();
+            }, 1000);
+        }
+    })
+}
+
 function activateTile(color) {
     for (let i = 0; i < tiles.length; i++) {
         if (tiles[i].getAttribute('data-tile') === color) {
-            tiles[i].classList.toggle('inactive');
+            tiles[i].classList.remove('inactive');
             playColorAudio(color);
             setTimeout(() => {
-                tiles[i].classList.toggle('inactive');
-            }, 1000);
+                tiles[i].classList.add('inactive');
+            }, 750);
+            return;
         }
     }
 }
 
-function playCorlorPattern(colorsPattern) {
+function playColorPattern(colorsPattern) {
     for (let i = 0; i < colorsPattern.length; i++) {
-        activateTile(colorsPattern[i]);
+        setTimeout(() => {
+            activateTile(colorsPattern[i]);
+        }, i * 750);
+
+        if (i === colorsPattern.length -1) {
+            board.classList.remove('unclickable')
+        }
     }
 }
 
@@ -106,13 +129,12 @@ function addRandomColor() {
     colorsPattern.push(randomColor);
 }
 
-getColors();
+document.addEventListener('DOMContentLoaded', loadHighScore)
 
 playBtn.addEventListener('click', function () {
-    board.classList.remove('unclickable');
-    startDemonstration();
+    newLevel();
+    playBtn.classList.add('unclickable');
 })
 
-checkUserInput();
-
-console.log('initial click count',clickCount);
+getColors();
+getUserInput();
