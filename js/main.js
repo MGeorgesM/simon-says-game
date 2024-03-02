@@ -27,15 +27,15 @@ function playWrongAudio() {
 
     setTimeout(() => {
         wrongAudio.play();
-    }, 1000);
+    }, 750);
 
     setTimeout(() => {
         gameOverAudio.play();
-    }, 3000);
+    }, 2000);
 
     setTimeout(() => {
         location.reload();
-    }, 4000);
+    }, 3000);
 }
 
 function playWinAudio() {
@@ -43,31 +43,22 @@ function playWinAudio() {
     gameWonAudio.play();
 }
 
-function adjustHighScore(score) {
-    if (score > highScore) {
-        highScoreDisplay.innerHTML = score;
-        localStorage.setItem('highScore', JSON.stringify(score));
-    }
-}
-
-function adjustLevelScore(score) {
-    if (score > level) {
-        levelDislay.innerHTML = score;
+function adjustScores() {
+    level += 1;
+    levelDislay.innerHTML = level;
+    if (level > highScore) {
+        highScore = level;
+        highScoreDisplay.innerHTML = highScore;
+        localStorage.setItem('highScore', JSON.stringify(highScore));
     }
 }
 
 function loadHighScore() {
     const savedHighScore = JSON.parse(localStorage.getItem('highScore'));
     if (savedHighScore) {
-        adjustHighScore(savedHighScore);
+        highScoreDisplay.innerHTML = savedHighScore;
+        highScore = savedHighScore;
     }
-}
-
-function newLevel() {
-    clickCount = 0;
-    addRandomColor();
-    playColorPattern(colorsPattern);
-    console.log(colorsPattern);
 }
 
 function getUserInput() {
@@ -90,37 +81,38 @@ function getUserInput() {
 
         if (clickCount === colorsPattern.length) {
             setTimeout(() => {
-                adjustHighScore(clickCount);
-                adjustLevelScore(clickCount);
+                adjustScores();
                 newLevel();
             }, 1000);
         }
     })
 }
 
-function activateTile(color) {
+function activateTile(color, delay) {
     for (let i = 0; i < tiles.length; i++) {
         if (tiles[i].getAttribute('data-tile') === color) {
-            tiles[i].classList.remove('inactive');
-            playColorAudio(color);
             setTimeout(() => {
-                tiles[i].classList.add('inactive');
-            }, 750);
-            return;
+                tiles[i].classList.remove('inactive');
+                playColorAudio(color);
+                setTimeout(() => {
+                    tiles[i].classList.add('inactive');
+                }, 500);
+            }, delay);
         }
     }
 }
 
 function playColorPattern(colorsPattern) {
+    let delay = 0;
+    board.classList.add('unclickable');
     for (let i = 0; i < colorsPattern.length; i++) {
-        setTimeout(() => {
-            activateTile(colorsPattern[i]);
-        }, i * 750);
+        activateTile(colorsPattern[i], delay);
+        delay += 1000;
 
-        if (i === colorsPattern.length -1) {
-            board.classList.remove('unclickable')
-        }
     }
+    setTimeout(() => {
+        board.classList.remove('unclickable');
+    }, colorsPattern.length * 750);
 }
 
 function addRandomColor() {
@@ -129,12 +121,23 @@ function addRandomColor() {
     colorsPattern.push(randomColor);
 }
 
+function newLevel() {
+    if (level === 12) {
+        board.classList.add('unclickable');
+        playWinAudio();
+        return;
+    }
+    clickCount = 0;
+    addRandomColor();
+    playColorPattern(colorsPattern);
+}
+
 document.addEventListener('DOMContentLoaded', loadHighScore)
 
 playBtn.addEventListener('click', function () {
-    newLevel();
     playBtn.classList.add('unclickable');
+    adjustScores();
+    getColors();
+    newLevel();
+    getUserInput();
 })
-
-getColors();
-getUserInput();
