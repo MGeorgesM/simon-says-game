@@ -32,10 +32,6 @@ function playWrongAudio() {
     setTimeout(() => {
         gameOverAudio.play();
     }, 2000);
-
-    setTimeout(() => {
-        location.reload();
-    }, 3000);
 }
 
 function playWinAudio() {
@@ -59,33 +55,6 @@ function loadHighScore() {
         highScoreDisplay.innerHTML = savedHighScore;
         highScore = savedHighScore;
     }
-}
-
-function getUserInput() {
-    board.addEventListener('click', function (event) {
-
-        const clickedTile = event.target.closest('[data-tile]');
-
-        if (clickedTile) {
-            const selectedColor = clickedTile.getAttribute('data-tile');
-            playColorAudio(selectedColor);
-
-            if (selectedColor != colorsPattern[clickCount]) {
-                board.classList.add('unclickable');
-                playWrongAudio();
-                return;
-            }
-        }
-
-        clickCount++;
-
-        if (clickCount === colorsPattern.length) {
-            setTimeout(() => {
-                adjustScores();
-                newLevel();
-            }, 1000);
-        }
-    })
 }
 
 function activateTile(color, delay) {
@@ -121,10 +90,17 @@ function addRandomColor() {
     colorsPattern.push(randomColor);
 }
 
+function newGame() {
+    level = 0;
+    clickCount = 0;
+    colorsPattern = [];
+    playBtn.classList.remove('unclickable');
+}
+
 function newLevel() {
     if (level === 12) {
-        board.classList.add('unclickable');
-        playWinAudio();
+        gameWon();
+        newGame();
         return;
     }
     clickCount = 0;
@@ -132,12 +108,47 @@ function newLevel() {
     playColorPattern(colorsPattern);
 }
 
+function gameWon() {
+    board.classList.add('unclickable');
+    playWinAudio();
+}
+
+function gameOver() {
+    board.classList.add('unclickable');
+    playWrongAudio();
+}
+
+getColors();
+
 document.addEventListener('DOMContentLoaded', loadHighScore)
 
 playBtn.addEventListener('click', function () {
     playBtn.classList.add('unclickable');
     adjustScores();
-    getColors();
     newLevel();
-    getUserInput();
+})
+
+board.addEventListener('click', function (event) {
+
+    const clickedTile = event.target.closest('[data-tile]');
+
+    if (clickedTile) {
+        const selectedColor = clickedTile.getAttribute('data-tile');
+        playColorAudio(selectedColor);
+
+        if (selectedColor != colorsPattern[clickCount]) {
+            gameOver();
+            newGame();
+            return;
+        }
+    }
+
+    clickCount++;
+
+    if (clickCount === colorsPattern.length) {
+        setTimeout(() => {
+            adjustScores();
+            newLevel();
+        }, 1000);
+    }
 })
